@@ -25,6 +25,8 @@
 /* Begin PBXFileReference section */
 		4227445D23D4340300CD6448 /* sahaj_wiki */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sahaj_wiki; sourceTree = BUILT_PRODUCTS_DIR; };
 		4227446023D4340400CD6448 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		4227446823D57EC600CD6448 /* main.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = main.hpp; sourceTree = "<group>"; };
+		4227446B23D58B7C00CD6448 /* comp */ = {isa = PBXFileReference; lastKnownFileType = text; path = comp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +59,9 @@
 		4227445F23D4340300CD6448 /* sahaj_wiki */ = {
 			isa = PBXGroup;
 			children = (
+				4227446B23D58B7C00CD6448 /* comp */,
 				4227446023D4340400CD6448 /* main.cpp */,
+				4227446823D57EC600CD6448 /* main.hpp */,
 			);
 			path = sahaj_wiki;
 			sourceTree = "<group>";
