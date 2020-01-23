@@ -23,18 +23,21 @@ int main(int argc, const char * argv[]) {
     comprehension com;
     int ans_index[COMP_NO_QUES] = {0};
     
+    /* init debug change it to true to get more debug outs */
+    comprehension::debug = false;
+    sentence::debug      = false;
+    
     /* create comprehension data structure for processing */
-    com.init(input_file);
+    com.init (input_file);
     
     /* check whether the parsing is right */
-    if (debug)
-        com.cross_check ();
+    com.display_org_content ();
     
     /* find the best ans */
     com.find_best_answers (ans_index);
     
     /* display the right ans */
-    com.display_right_answers(!debug);
+    com.display_right_answers ();
     
     return 0;
 }
@@ -94,7 +97,7 @@ int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_w
     int   index, max_index;
     float max_weight, weight;
     
-    cout << "\nComparing " << *this << "\n";
+    DEBUG_LOG cout << "\nComparing " << *this << "\n";
     
     /*inits*/
     max_index = 0;
@@ -102,7 +105,7 @@ int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_w
     
     for (index = 0; index < max_sentences; index++)
     {
-        cout << "\t" << index << " " << p_sentences[index] << "\n";
+        DEBUG_LOG cout << "\t" << index << " " << p_sentences[index] << "\n";
         
         weight           = compare(p_sentences[index]);
         p_weights[index] = weight;
@@ -247,7 +250,7 @@ float sentence::compare_words(string *p_src_words, int src_words,
     //weight = matches / des_words;
     weight = matches;
     
-    printf ("Mathes %f src %d des %d Weight %f\n", matches, src_words, des_words, weight);
+    DEBUG_LOG printf ("Mathes %f src %d des %d Weight %f\n", matches, src_words, des_words, weight);
     
     return  weight;
 }
@@ -374,44 +377,26 @@ string sentence::get_word(size_t &pos) const
  */
 int comprehension::find_best_answers (int *p_indexs)
 {
-    int      story_inx, ques, ans, ti;
-    float    max_weight;
+    int      ans, ti;
     sentence right_story_lines[COMP_NO_QUES];
     int      right_ques_indexs[COMP_NO_QUES];
     
-    
-    //float weights_total[COMP_NO_QUES][COMP_STORY_LINES];
-    
-    printf ("\nFinding weights for questions\n");
     find_weights(questions, questions_sz(), story, story_sz(), weights_ques,
                  right_stories, right_story_lines);
-    find_weights(answers, answers_sz(), right_story_lines, questions_sz(), weights_ans, right_ques_indexs);
+    find_weights(answers, answers_sz(), right_story_lines, questions_sz(), weights_ans,
+                 right_ques_indexs);
     
-    printf ("\nQuestion<->Story Weights\n");
-    for (ques = 0; ques < questions_sz(); ques++)
-    {
-        for (story_inx = 0; story_inx < story_sz(); story_inx++)
-        {
-            printf("%2.2f ", weights_ques[ques][story_inx]);
-        }
-        printf(" [%d]\n", right_stories[ques]);
-    }
-
-    printf ("\nAnswer<->Story Weights\n");
+    /* display the fond weights */
+    display_weights (right_stories, right_ques_indexs);
+    
+    /* convert ans<->story index to ques<->ans index */
     for (ans = 0; ans < questions_sz(); ans++)
     {
-        for (ques = 0; ques < questions_sz(); ques++)
-        {
-            printf("%2.2f ", weights_ans[ans][ques]);
-        }
-
         ti = right_ques_indexs[ans];
         right_answers[ti]  = ans;
-        printf(" [%d]\n", ti);
-        
     }
     
-    return ques;
+    return 1;
 }
 
 
@@ -586,10 +571,12 @@ bool comprehension::init (const char *pFileName)
     return true;
 }
 
-void comprehension::cross_check() const
+void comprehension::display_org_content() const
 {
     int index;
     
+    if (!debug) return ;
+
     cout << "Story :" << "\n";
     for (index = 0; index < story_sz(); index++)
         cout << index << " " << story[index] << "\n";
@@ -604,7 +591,7 @@ void comprehension::cross_check() const
 
 }
 
-void comprehension::display_right_answers (bool just_ans) const
+void comprehension::display_right_answers () const
 {
     int i, ans_index, story_index;
     
@@ -612,10 +599,37 @@ void comprehension::display_right_answers (bool just_ans) const
         {
             ans_index    = right_answers[i];
             story_index  = right_stories[i];
-            if (just_ans)
+            if (!debug)
                 cout << answers[ans_index] << "\n";
             else
                 cout << questions[i] << "->" << story[story_index] << "->" << answers[ans_index] << "\n";
         }
 }
 
+
+void comprehension::display_weights(int *p_q_s_indexs, int *p_a_s_indexs) const
+{
+    int   ques, ans, story_inx;
+    
+    if (!debug) return ;
+    
+    printf ("\nQuestion<->Story Weights\n");
+    for (ques = 0; ques < questions_sz(); ques++)
+    {
+        for (story_inx = 0; story_inx < story_sz(); story_inx++)
+        {
+            printf("%2.2f ", weights_ques[ques][story_inx]);
+        }
+        printf(" [%d]\n", p_q_s_indexs[ques]);
+    }
+
+    printf ("\nAnswer<->Story Weights\n");
+    for (ans = 0; ans < questions_sz(); ans++)
+    {
+        for (ques = 0; ques < questions_sz(); ques++)
+        {
+            printf("%2.2f ", weights_ans[ans][ques]);
+        }
+        printf(" [%d]\n", p_a_s_indexs[ans]);
+    }
+}

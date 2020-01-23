@@ -11,6 +11,8 @@
 
 using namespace std;
 
+#define DEBUG_LOG if(debug)
+
 /* sentence - Driverd from string, support sentence level functions
  *
  */
@@ -37,6 +39,8 @@ public :
     /* prase the given lines into multiple sentences */
     static int parse(const string &str, sentence *psentences,  int max_sentences, char delimeter);
     
+    static bool debug;
+    
 protected:
     static const int    SEN_MAX_WORDS;                         /* Maximum words in a sentence */
     
@@ -56,6 +60,7 @@ private:
 const int sentence::SEN_MAX_WORDS   = 64;                       /* Maximum words in a sentence */
 const int sentence::MIDDLE          = 1;                        /* state constants internal use */
 const int sentence::END             = 0;                        /* state constants internal use */
+bool sentence::debug                = true;                     /* set this for debugging */
 
 /* low impact common words which can be ignored while comparing two sentences */
 const string sentence::COMMON_WORDS = "are Which What which and the what of by in";
@@ -75,6 +80,7 @@ public:
     int  right_stories[COMP_NO_QUES];              /* correspoding stories  */
     float  weights_ques[COMP_NO_QUES][COMP_STORY_LINES];               /* Ques<->stroy line weight */
     float  weights_ans[COMP_NO_QUES][COMP_STORY_LINES];                /* Ans<->stroy line weight */
+    static bool debug;
     
     /* initialize the internal data structure using given file */
     bool init (const char *pFileName);
@@ -84,8 +90,11 @@ public:
     int story_sz()     const {return sz_story;};
     int questions_sz() const {return sz_questions;};
     int answers_sz()   const {return sz_answers;};
-    void cross_check() const;
-    void display_right_answers (bool just_ans=true) const;
+    
+    /* display routines for debugging and output */
+    void display_org_content() const;
+    void display_right_answers () const;
+    void display_weights(int *p_q_s_indexs, int *p_a_s_indexs) const;
     
 private:
     /* help function to parse the file */
@@ -99,5 +108,7 @@ private:
     int sz_story, sz_questions, sz_answers;
 
 };
+
+bool comprehension::debug = true;
 
 #endif /* main_h */
