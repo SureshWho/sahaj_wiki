@@ -20,12 +20,18 @@ bool debug = false;
 char input_file[256] = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/sahaj_wiki/comp";
 
 int main(int argc, const char * argv[]) {
+    bool debug = false;
     comprehension com;
     int ans_index[COMP_NO_QUES] = {0};
     
+    /* process command line */
+    printf ("Usage: sahaj_wiki [debug(0|1)] [inputfile]\n");
+    if (argc >= 2) debug = (strcmp(argv[1], "1") == 0) ;
+    if (argc >= 3) strcpy(input_file, argv[2]) ;
+    
     /* init debug change it to true to get more debug outs */
-    comprehension::debug = false;
-    sentence::debug      = false;
+    comprehension::debug = debug;
+    sentence::debug      = debug;
     
     /* create comprehension data structure for processing */
     com.init (input_file);
