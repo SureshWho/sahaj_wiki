@@ -20,7 +20,7 @@ class sentence : public string
 {
 public :
     /* get all the base class constructers and operator= functions */
-    using string::string;
+    //using string::string;
     using string::operator=;
     
     /* compars this sentence with the given sentence */
