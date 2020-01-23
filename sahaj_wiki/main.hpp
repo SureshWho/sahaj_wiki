@@ -24,11 +24,13 @@ public :
     using string::operator=;
     
     /* compars this sentence with the given sentence */
-    virtual float compare(const sentence &st) const;
-    
-    /* find a best match from given set of sentences */
-    int find_best(sentence *p_sentences,  int max_sentences) const;
+    virtual float find_weight(const sentence &st) const;
     int find_weights(sentence *p_sentences,  int max_sentences, float *p_weights) const;
+    
+    /* Find weights */
+    static float find_weight_words(string *p_src_words, int src_words,
+                              string *p_des_words, int des_words);
+    static float find_weight_word(string src_word, string des_words);
     
     /* returns a word from the sentence */
     string get_word(size_t &pos) const;
@@ -47,11 +49,6 @@ protected:
 private:
     static const int END;
     static const int MIDDLE;
-    
-    /* compares the given words and return weights */
-    static float compare_words(string *p_src_words, int src_words,
-                               string *p_des_words, int des_words);
-    static float compare_word(string src_word, string des_words);
     
     static const string COMMON_WORDS;
 };
@@ -84,7 +81,7 @@ public:
     
     /* initialize the internal data structure using given file */
     bool init (const char *pFileName);
-    int find_best_answers (int *p_indexs);
+    int find_best_answers ();
     
     /* helpers functions to get size of internal data */
     int story_sz()     const {return sz_story;};
@@ -99,7 +96,7 @@ public:
 private:
     /* help function to parse the file */
     static int parse(ifstream &fin, sentence *p_sentences, int max_sen, char delimeter);
-    static int read_N(ifstream &fin, sentence *p_sentences, int N);
+    static int parse(ifstream &fin, sentence *p_sentences, int N);
     static int find_best (sentence *p_src,  int sz_src, sentence *p_des,  int sz_des,
                           int* p_indexs, sentence *p_result);
     static int find_weights (sentence *p_src, int sz_src, sentence *p_des,  int sz_des,

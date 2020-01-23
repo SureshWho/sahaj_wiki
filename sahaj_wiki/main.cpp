@@ -16,13 +16,17 @@
 
 using namespace std;
 
+/* app level default */
 bool debug = false;
 char input_file[256] = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/sahaj_wiki/comp";
 
+/*
+ * Usage:   sahaj_wiki [debug(0|1)] [inputfile]
+ * Example: sahaj_wiki 0 story.txt
+ */
 int main(int argc, const char * argv[]) {
     bool debug = false;
     comprehension com;
-    int ans_index[COMP_NO_QUES] = {0};
     
     /* process command line */
     printf ("Usage: sahaj_wiki [debug(0|1)] [inputfile]\n");
@@ -36,11 +40,11 @@ int main(int argc, const char * argv[]) {
     /* create comprehension data structure for processing */
     com.init (input_file);
     
-    /* check whether the parsing is right */
+    /* check whether the parsing was right */
     com.display_org_content ();
     
     /* find the best ans */
-    com.find_best_answers (ans_index);
+    com.find_best_answers ();
     
     /* display the right ans */
     com.display_right_answers ();
@@ -52,52 +56,55 @@ int main(int argc, const char * argv[]) {
  * sentence - Sentences helper class
  */
 
-/* XXX parse() - Parses the given string and makes individual sentences.
+/* find_weight() - Compares two sentenses and find similarity weight.
  *
  * Input :
- *      str           - String to be parsed.
- *      p_sentences   - Where to store the parsed sentences.
- *      max_sentences - How much <p_sentences> can hold
- *      delimeter     - delimeter for parsing.
- *
+ *      target      - Sentence to be compared.
  *
  * Output :
- *      p_sentences - contains pasrsed sentences
+ *      None
  *
  * Returns :
- *      Number of sentences created.
+ *      Similarity in the form of Weight.
  *
  * Description :
- *      Compares given sentence, and returns similarity in the form of weights. Eg 1 means sentence
- * is perfect match, 0.5 means only half of the sentence match.
+ *      Compares given sentence with this object sentece, and returns similarity in the
+ *      form of weights.
  */
-int sentence::find_best(sentence *p_sentences,  int max_sentences) const
+float sentence::find_weight(const sentence &target) const
 {
-    int   index, match;
-    float tweight, max_weight;
+    int    len_src, len_des;
+    string src[SEN_MAX_WORDS], des[SEN_MAX_WORDS];
+    float  weight ;
     
-    /* inits */
-    max_weight = -1;
-    match      = -1;
+    /* get the words from sentences */
+    len_src = get_words(src, SEN_MAX_WORDS);
+    len_des = target.get_words(des, SEN_MAX_WORDS);
+
+    /* compare words */
+    weight = find_weight_words(src, len_src, des, len_des);
     
-    cout << "\nComparing " << *this << "\n";
-    
-    for (index = 0; index < max_sentences; index++)
-    {
-        cout << "\t" << index << " " << p_sentences[index] << "\n";
-        tweight = compare(p_sentences[index]);
-        
-        /* find the best match */
-        if (tweight > max_weight)
-        {
-            match      = index;
-            max_weight = tweight;
-        }
-    }
-    
-    return match;
+    return weight;
 }
 
+/* find_weights - Compares the class sentence with given sentences and return weights.
+ *
+ * Input :
+ *      p_sentences   - List of sentences to be compared.
+ *      max_sentences - Size of <p_sentences> can hold
+ *      p_weights     - Pointer for returning weights should able to hold
+ *                      <max_sentences> number of weights.
+ * Output :
+ *      p_weights - Weights
+ *
+ * Returns :
+ *      Index for the sentence which matches closly.
+ *
+ * Description :
+ *      Compares the object's sentence with given sentences, and returns the similarity
+ * all given sentences in the form of weights. Also return the index of the sentence which matchs
+ * closly with the given sentence.
+ */
 int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_weights) const
 {
     int   index, max_index;
@@ -106,15 +113,18 @@ int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_w
     DEBUG_LOG cout << "\nComparing " << *this << "\n";
     
     /*inits*/
-    max_index = 0;
+    max_index  = 0;
     max_weight = 0;
     
+    /* for each sentence find the comparing weight */
     for (index = 0; index < max_sentences; index++)
     {
         DEBUG_LOG cout << "\t" << index << " " << p_sentences[index] << "\n";
         
-        weight           = compare(p_sentences[index]);
+        weight           = find_weight(p_sentences[index]);
         p_weights[index] = weight;
+        
+        /* find the best matching sentence */
         if (weight > max_weight)
         {
             max_weight = weight;
@@ -122,11 +132,108 @@ int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_w
         }
     }
     
+    /* return best matching sentence */
     return max_index;
 }
 
+/* find_weight_words() - Finds similarity between two sets words.
+ *
+ * Input :
+ *      p_src_words - Source words
+ *      src_words   - size of <p_src_words>
+ *      p_des_words - destination words
+ *      des_words   - sizeof <p_des_words>
+ *
+ * Output :
+ *      None
+ *
+ * Returns :
+ *      Similarity between word sets (in the form of weights).
+ *
+ * Description :
+ *      Compares given words, and returns similarity in the form of weights.
+ */
+float sentence::find_weight_words(string *p_src_words, int src_words,
+                              string *p_des_words, int des_words)
+{
+    int    src_index, des_index;
+    float  max_weight, weight, matches;
+    size_t pos;
 
-/* parse() - Parses the given string and makes individual sentences.
+    /* inits */
+    matches    = 0;
+    
+    /* compare each source word with all destination words */
+    des_index = 0;
+    for (src_index = 0; src_index < src_words; src_index++)
+    {
+        max_weight = 0.0;
+        
+        /* if the src word is a common word skip it */
+        pos = COMMON_WORDS.find(p_src_words[src_index]);
+        if (pos != npos)
+            continue;
+        
+        for (des_index = 0; des_index < des_words; des_index++)
+        {
+            weight = find_weight_word(p_src_words[src_index], p_des_words[des_index]);
+            if (weight > max_weight)
+            {
+                max_weight = weight;
+            }
+        }
+        matches += max_weight;
+    }
+    
+    //weight = matches / des_words;
+    weight = matches;
+    
+    DEBUG_LOG printf ("Mathes %f src %d des %d Weight %f\n", matches, src_words, des_words, weight);
+    
+    return  weight;
+}
+
+/* find_weight_word() - Compares two given words.
+ *
+ * Input :
+ *      src - Source word
+ *      des - Word to be compared with
+ *
+ * Output :
+ *      None
+ *
+ * Returns :
+ *      Similarity in the form of Weight.
+ *
+ * Description :
+ *      Compares given words, and returns similarity in the form of weights.
+ */
+float sentence::find_weight_word(string src, string des)
+{
+    size_t src_len, des_len, pos, len;
+    int    matches = 0;
+    float  weight;
+    
+    /* compare only smallest chars of two words */
+    src_len = src.length();
+    des_len = des.length();
+    len     = min(src_len, des_len);
+
+    /* compare each char */
+    for (pos = 0; pos < len; pos++)
+        if (tolower(src.at(pos)) == tolower(des.at(pos)))
+            matches++;
+    
+    /* find the weight */
+     weight = (float) matches / src_len;
+    //weight = round(weight - 0.2);
+    
+    //cout << "weight " << src << " " << des << " " << weight << "\n";
+    
+    return weight;
+}
+
+/* parse() - Parses the given string and breaks them into individual sentences.
  *
  * Input :
  *      str           - String to be parsed.
@@ -142,8 +249,7 @@ int sentence::find_weights(sentence *p_sentences,  int max_sentences, float *p_w
  *      Number of sentences created.
  *
  * Description :
- *      Compares given sentence, and returns similarity in the form of weights. Eg 1 means sentence
- * is perfect match, 0.5 means only half of the sentence match.
+ *      Parses the given string and breaks them into individual sentences.
  */
 int sentence::parse(const string &str, sentence *p_sentences,  int max_sentences, char delimeter)
 {
@@ -170,140 +276,7 @@ int sentence::parse(const string &str, sentence *p_sentences,  int max_sentences
     return i;
 }
 
-/* compare() - Compares the given sentence.
- *
- * Input :
- *      target      - Sentence to be compared.
- *
- *
- * Output :
- *      None
- *
- * Returns :
- *      Similarity in the form of Weight.
- *
- * Description :
- *      Compares given sentence, and returns similarity in the form of weights. Eg 1 means sentence
- * is perfect match, 0.5 means only half of the sentence match.
- */
-float sentence::compare(const sentence &target) const
-{
-    int    len_src, len_des;
-    string src[SEN_MAX_WORDS], des[SEN_MAX_WORDS];
-    float  weight ;
-    
-    /* get the words from sentences */
-    len_src = get_words(src, SEN_MAX_WORDS);
-    len_des = target.get_words(des, SEN_MAX_WORDS);
-
-    /* compare words */
-    weight = compare_words(src, len_src, des, len_des);
-    
-    return weight;
-}
-
-/* compare_words() - Compares two sets of words.
- *
- * Input :
- *      p_src_words - Source words
- *      src_words   - size of <p_src_words>
- *      p_des_words - destination words
- *      des_words   - sizeof <p_des_words>
- *
- *
- * Output :
- *      None
- *
- * Returns :
- *      Similarity in the form of Weight.
- *
- * Description :
- *      Compares given words, and returns similarity in the form of weights. Eg 1 means all words
- * match perfectly, 0.5 means only half of the words match.
- */
-float sentence::compare_words(string *p_src_words, int src_words,
-                              string *p_des_words, int des_words)
-{
-    int    src_index, des_index;
-    float  max_weight, weight, matches;
-    size_t pos;
-
-    /* inits */
-    matches    = 0;
-    
-    /* compare each source word with all destination words */
-    des_index = 0;
-    for (src_index = 0; src_index < src_words; src_index++)
-    {
-        max_weight = 0.0;
-        
-        /* if the src word is a common word skip it */
-        pos = COMMON_WORDS.find(p_src_words[src_index]);
-        if (pos != npos)
-            continue;
-        
-        for (des_index = 0; des_index < des_words; des_index++)
-        {
-            weight = compare_word(p_src_words[src_index], p_des_words[des_index]);
-            if (weight > max_weight)
-            {
-                max_weight = weight;
-            }
-        }
-        matches += max_weight;
-    }
-    
-    //weight = matches / des_words;
-    weight = matches;
-    
-    DEBUG_LOG printf ("Mathes %f src %d des %d Weight %f\n", matches, src_words, des_words, weight);
-    
-    return  weight;
-}
-
-/* compare_word() - Compares two given words.
- *
- * Input :
- *      src - Source word
- *      des - Word to be compared with
- *
- * Output :
- *      None
- *
- * Returns :
- *      Similarity in the form of Weight.
- *
- * Description :
- *      Compares given words, and returns similarity in the form of weights. Eg 1 means the
- * words match perfectly, 0.5 means only half of the word match.
- */
-float sentence::compare_word(string src, string des)
-{
-    size_t src_len, des_len, pos, len;
-    int    matches = 0;
-    float  weight;
-    
-    /* compare only smallest chars of two words */
-    src_len = src.length();
-    des_len = des.length();
-    len     = min(src_len, des_len);
-
-    /* compare each char */
-    for (pos = 0; pos < len; pos++)
-        if (tolower(src.at(pos)) == tolower(des.at(pos)))
-            matches++;
-    
-    /* find the weight */
-     weight = (float) matches / src_len;
-    //weight = round(weight - 0.2);
-    
-    //cout << "weight " << src << " " << des << " " << weight << "\n";
-    
-    return weight;
-}
-
-
-/* get_words() - Returns all words in the sentence as individual string(s)
+/* get_words() - Returns all words in the given sentence as individual string(s)
  *
  * Input :
  *      p_words   - Where to return the words
@@ -381,67 +354,57 @@ string sentence::get_word(size_t &pos) const
 /*
  * comprehension - Comprehension helper class
  */
-int comprehension::find_best_answers (int *p_indexs)
+
+/* init() - Initialize the comprension object with the given file
+ *
+ * Input :
+ *      pFileName - Pointer to the input file name
+ *
+ * Returns :
+ *      true - if sucess.
+ *
+ * Description :
+ *      From the given file, this function creates story, questions, and original answers data
+ * stuctures. Each (story, questions, and answers) will be sepereted as individual sentences
+ * and stored.
+ *
+ * Input File Format
+ *      - The first line contains a short paragraph of text from Wikipedia.
+ *      - Lines 2 to 6 contain a total of 5 questions.
+ *      - Line 7 contains all the five answers, which are jumbled up.
+ *
+ */
+bool comprehension::init (const char *pFileName)
 {
-    int      ans, ti;
-    sentence right_story_lines[COMP_NO_QUES];
-    int      right_ques_indexs[COMP_NO_QUES];
+    ifstream fin;
+    string  line;
     
-    find_weights(questions, questions_sz(), story, story_sz(), weights_ques,
-                 right_stories, right_story_lines);
-    find_weights(answers, answers_sz(), right_story_lines, questions_sz(), weights_ans,
-                 right_ques_indexs);
-    
-    /* display the fond weights */
-    display_weights (right_stories, right_ques_indexs);
-    
-    /* convert ans<->story index to ques<->ans index */
-    for (ans = 0; ans < questions_sz(); ans++)
+    /* open the given file */
+    fin.open(pFileName, ios::in);
+    if (fin.fail())
     {
-        ti = right_ques_indexs[ans];
-        right_answers[ti]  = ans;
+        printf ("ERROR !!! : File open error \n");
+        return false;
     }
     
-    return 1;
-}
-
-
-//XXX
-int comprehension::find_best (sentence *p_src,  int sz_src, sentence *p_des,  int sz_des,
-                              int* p_indexs, sentence *p_result)
-{
-    int  index_src = 0;
-    int  index;
+    /* read the story paragraph and store it as individual sentences */
+    sz_story = parse (fin, story, COMP_STORY_LINES, '.');
     
-    /* for each src find the best in des */
-    for (index_src = 0; index_src < sz_src; index_src++)
-    {
-        index = p_src[index_src].find_best(p_des, sz_des) ;
-        p_indexs[index_src]  = index;
-        if (p_result != NULL)
-            p_result[index_src]  = p_des[index] ;
-    }
+    /* read the questions and store it as individual sentences */
+    if (sz_story > 0)
+        sz_questions = parse (fin, questions, COMP_NO_QUES);
     
-    return index_src;
-}
-
-int comprehension::find_weights (sentence *p_src,  int sz_src, sentence *p_des,  int sz_des,
-                                 float p_weights[][COMP_STORY_LINES],
-                                 int *p_max_indexs, sentence *p_target)
-{
-    int   index_src = 0;
-    int   best_index;
+    /* read the answers and store it as individual sentences */
+    if (sz_questions == COMP_NO_QUES)
+        sz_answers = parse (fin, answers, COMP_NO_QUES, ';');
     
-    /* for each src find the best in des */
-    for (index_src = 0; index_src < sz_src; index_src++)
-    {
-        best_index = p_src[index_src].find_weights(p_des, sz_des, p_weights[index_src]) ;
-        p_max_indexs[index_src] = best_index;
-        if (p_target != NULL)
-            p_target[index_src]     = p_des[best_index];
-    }
+    if (sz_answers != sz_questions)
+        printf ("ERROR !!! Questions and Answers does not match\n");
     
-    return index_src;
+    /* close the file */
+    fin.close();
+    
+    return true;
 }
 
 /* parse() - Read a line from the file, parses it and store it as senetences
@@ -484,7 +447,7 @@ int comprehension::parse (ifstream &fin, sentence *p_sentences, int max_sen, cha
     return lines;
 }
 
-/* read_N() - Read N lines from the file
+/* parse() - Parse N lines from the file
  *
  * Input :
  *      fin         - File
@@ -501,7 +464,7 @@ int comprehension::parse (ifstream &fin, sentence *p_sentences, int max_sen, cha
  *      Reads N lines from the file and returns it as sentences.
  *
  */
-int comprehension::read_N (ifstream &fin, sentence *p_sentences, int N)
+int comprehension::parse (ifstream &fin, sentence *p_sentences, int N)
 {
     string  line;
     int     index;
@@ -525,58 +488,100 @@ int comprehension::read_N (ifstream &fin, sentence *p_sentences, int N)
     return index;
 }
 
-/* init() - Initialize the comprension object with the given file
+/* find_best_answers() - Finds the best answer for the comprehension.
  *
- * Input :
- *      pFileName - Pointer to the input file name
+ * Input : None
+ *
+ * Output :
+ *      right_stories - Member variable is modified with right stories which machts the questions.
+ *      right_answers - Member variable is modified with right answers which matchs the questions.
  *
  * Returns :
- *      true - if sucess.
+ *      Number of sentences processed.
  *
  * Description :
- *      From the given file, this function creates story, questions, and original answers data
- * stuctures. Each (story, questions, and answers) will be sepereted as individual sentences
- * and stored.
- *
- * Input File Format
- *      - The first line contains a short paragraph of text from Wikipedia.
- *      - Lines 2 to 6 contain a total of 5 questions.
- *      - Line 7 contains all the five answers, which are jumbled up.
- *
+ *      This functions compares each question with story line sentences to find the right story lines
+ * which matches the questions. Then each given answers are compared against these story lines to
+ * find better answers for corresponding questions.
  */
-bool comprehension::init (const char *pFileName)
+int comprehension::find_best_answers ()
 {
-    ifstream fin;
-    string  line;
+    int      ans, ti;
+    sentence right_story_lines[COMP_NO_QUES];
+    int      right_ques_indexs[COMP_NO_QUES];
     
-    /* open the given file */
-    fin.open(pFileName, ios::in);
-    if (fin.fail())
+    /* First find story lines which machtes given questions */
+    find_weights(questions, questions_sz(), story, story_sz(), weights_ques,
+                 right_stories, right_story_lines);
+    
+    /* then compare each answer against these story lines (correponds to questions) to find better
+     * answer for each questions.
+     */
+    find_weights(answers, answers_sz(), right_story_lines, questions_sz(), weights_ans,
+                 right_ques_indexs);
+    
+    /* display the fond weights */
+    display_weights (right_stories, right_ques_indexs);
+    
+    /* convert ans<->story index to ques<->ans index */
+    for (ans = 0; ans < questions_sz(); ans++)
     {
-        printf ("ERROR !!! : File open error \n");
-        return false;
+        ti = right_ques_indexs[ans];
+        right_answers[ti]  = ans;
     }
     
-    /* read the story paragraph and store it as individual sentences */
-    sz_story = parse (fin, story, COMP_STORY_LINES, '.');
-    
-    /* read the questions and store it as individual sentences */
-    if (sz_story > 0)
-        sz_questions = read_N (fin, questions, COMP_NO_QUES);
-    
-    /* read the answers and store it as individual sentences */
-    if (sz_questions == COMP_NO_QUES)
-        sz_answers = parse (fin, answers, COMP_NO_QUES, ';');
-    
-    if (sz_answers != sz_questions)
-        printf ("ERROR !!! Questions and Answers does not match\n");
-    
-    /* close the file */
-    fin.close();
-    
-    return true;
+    return ans;
 }
 
+/* find_weights() - Finds similarity between two sets sentences.
+ *
+ * Input :
+ *      p_src        - Source sentences
+ *      sz_src       - size of <p_src>
+ *      p_des        - target sentences
+ *      sz_des       - sizeof <p_des>
+ *      p_weights    - Pointer for returning weights
+ *      p_max_indexs - Pointer for returning set of maximum weights
+ *      p_target     - Pointer to return maximumweight strings
+ *
+ * Output :
+ *      p_weights    - weights for all senetences
+ *      p_max_indexs - returns index of the target sentences which matchs most with inputs.
+ *      p_target     - most match sentence in the form of string.
+ *
+ * Returns :
+ *      Number of sentences processed.
+ *
+ * Description :
+ *      This functions takes two sets of sentences, and finds similarities between each sentence in
+ *      source with each sentence in target. Returned weights reflect the simiarities.
+ *      Function also return the closest matching sentences with the input sentence.
+ */
+int comprehension::find_weights (sentence *p_src,  int sz_src, sentence *p_des,  int sz_des,
+                                 float p_weights[][COMP_STORY_LINES],
+                                 int *p_max_indexs, sentence *p_target)
+{
+    int   index_src = 0;
+    int   best_index;
+    
+    /* for each src find the best in des */
+    for (index_src = 0; index_src < sz_src; index_src++)
+    {
+        /* find the weight similaritis for all the given sentences */
+        best_index = p_src[index_src].find_weights(p_des, sz_des, p_weights[index_src]) ;
+        
+        /* return the best matching sentence string also */
+        p_max_indexs[index_src] = best_index;
+        if (p_target != NULL)
+            p_target[index_src]     = p_des[best_index];
+    }
+    
+    return index_src;
+}
+
+/*
+ * Diaply helper functions
+ */
 void comprehension::display_org_content() const
 {
     int index;
@@ -607,8 +612,11 @@ void comprehension::display_right_answers () const
             story_index  = right_stories[i];
             if (!debug)
                 cout << answers[ans_index] << "\n";
-            else
-                cout << questions[i] << "->" << story[story_index] << "->" << answers[ans_index] << "\n";
+            else {
+                cout << i           << "." << questions[i]       << "->" ;
+                cout << story_index << "." << story[story_index] << "->";
+                cout << ans_index   << "." << answers[ans_index] << "\n";
+            }
         }
 }
 
