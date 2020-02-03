@@ -27,6 +27,8 @@
 		4227446023D4340400CD6448 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		4227446823D57EC600CD6448 /* main.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = main.hpp; sourceTree = "<group>"; };
 		4227446B23D58B7C00CD6448 /* comp */ = {isa = PBXFileReference; lastKnownFileType = text; path = comp; sourceTree = "<group>"; };
+		426EC32723E7BE2900121F4A /* test.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = test.txt; sourceTree = "<group>"; };
+		426EC32823E7BE2900121F4A /* input.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = input.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +61,8 @@
 		4227445F23D4340300CD6448 /* sahaj_wiki */ = {
 			isa = PBXGroup;
 			children = (
+				426EC32823E7BE2900121F4A /* input.txt */,
+				426EC32723E7BE2900121F4A /* test.txt */,
 				4227446B23D58B7C00CD6448 /* comp */,
 				4227446023D4340400CD6448 /* main.cpp */,
 				4227446823D57EC600CD6448 /* main.hpp */,

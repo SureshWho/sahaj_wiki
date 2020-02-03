@@ -18,7 +18,8 @@ using namespace std;
 
 /* app level default */
 bool debug = false;
-char input_file[256] = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/sahaj_wiki/comp";
+char input_file[256] = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/sahaj_wiki/input.txt";
+char test_file[256]  = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/sahaj_wiki/test.txt";
 
 /*
  * Usage:   sahaj_wiki [debug(0|1)] [inputfile]
@@ -26,19 +27,26 @@ char input_file[256] = "/Volumes/MyMedias/MachineLearning/code/code/sahaj_wiki/s
  */
 int main(int argc, const char * argv[]) {
     bool debug = false;
-    comprehension com;
+    comprehension com, test_com;
     
     /* process command line */
-    printf ("Usage: sahaj_wiki [debug(0|1)] [inputfile]\n");
+    printf ("Usage: sahaj_wiki [debug(0|1)] [inputfile] [test_file]\n");
     if (argc >= 2) debug = (strcmp(argv[1], "1") == 0) ;
     if (argc >= 3) strcpy(input_file, argv[2]) ;
+    if (argc >= 4) strcpy(test_file,  argv[3]) ;
     
     /* init debug change it to true to get more debug outs */
     comprehension::debug = debug;
     sentence::debug      = debug;
     
+    /* if test file is supplied run the test */
+    if ( strlen(test_file) != 0)
+        if (!test_com.run_test (test_file))
+            return -1 ;
+    
     /* create comprehension data structure for processing */
-    com.init (input_file);
+    if(!com.init (input_file))
+        return -1;
     
     /* check whether the parsing was right */
     com.display_org_content ();
@@ -358,7 +366,11 @@ string sentence::get_word(size_t &pos) const
 /* init() - Initialize the comprension object with the given file
  *
  * Input :
- *      pFileName - Pointer to the input file name
+ *      pFileName          - Pointer to the input file name
+ *      test_right_answers - If the input file is a test file, pass this pointer to get right answers
+ *                           from test file.
+ * Output :
+ *      test_right_answers - Right answers from test file is returned here.
  *
  * Returns :
  *      true - if sucess.
@@ -372,12 +384,14 @@ string sentence::get_word(size_t &pos) const
  *      - The first line contains a short paragraph of text from Wikipedia.
  *      - Lines 2 to 6 contain a total of 5 questions.
  *      - Line 7 contains all the five answers, which are jumbled up.
+ *      - Line 8 If it is a test file, this line contains the right answers.
  *
  */
-bool comprehension::init (const char *pFileName)
+bool comprehension::init (const char *pFileName, sentence *test_right_answers)
 {
     ifstream fin;
-    string  line;
+    string   line;
+    bool     ret = true;
     
     /* open the given file */
     fin.open(pFileName, ios::in);
@@ -399,12 +413,25 @@ bool comprehension::init (const char *pFileName)
         sz_answers = parse (fin, answers, COMP_NO_QUES, ';');
     
     if (sz_answers != sz_questions)
+    {
         printf ("ERROR !!! Questions and Answers does not match\n");
+        ret = false;
+    }
+    
+    /* if test file read additional lines (right answers) */
+    if ((test_right_answers != NULL) && (ret == true))
+    {
+        if (sz_answers != parse (fin, test_right_answers, COMP_NO_QUES, ';'))
+        {
+            printf ("ERROR !!! Questions and Answers does not match\n");
+            ret = false;
+        }
+    }
     
     /* close the file */
     fin.close();
     
-    return true;
+    return ret;
 }
 
 /* parse() - Read a line from the file, parses it and store it as senetences
@@ -646,4 +673,39 @@ void comprehension::display_weights(int *p_q_s_indexs, int *p_a_s_indexs) const
         }
         printf(" [%d]\n", p_a_s_indexs[ans]);
     }
+}
+
+/* unit test */
+bool comprehension::run_test (const char *pFileName)
+{
+    bool     ret = true;
+    int      ans_index,i;
+    sentence input_right_answers[COMP_NO_QUES];
+    
+    /* parse the input test file */
+    if (!init (pFileName, input_right_answers))
+    {
+        printf ("Test Failed !!! Parsing error \n");
+        return false;
+    }
+    
+    /* find the best answers using normal method */
+    find_best_answers ();
+
+    /* the check right answers from input file agaist the calculated one */
+    for (i = 0; i < questions_sz(); i++)
+        {
+            ans_index = right_answers[i];
+            if (input_right_answers[i] != answers[ans_index])
+            {
+                printf ("Test Failed !!! test answer [%d] does not match with calcuated [%d]\n", i, ans_index);
+                cout << "*Test:* " << input_right_answers[i] << " *Calculated:* " << answers [ans_index] << "\n";
+                ret = false;
+            }
+        }
+    
+    if (ret)
+        printf ("Test Passed\n");
+    
+    return ret;
 }

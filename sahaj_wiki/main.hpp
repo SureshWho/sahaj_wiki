@@ -80,7 +80,7 @@ public:
     static bool debug;
     
     /* initialize the internal data structure using given file */
-    bool init (const char *pFileName);
+    bool init (const char *pFileName, sentence *right_ans = NULL);
     int find_best_answers ();
     
     /* helpers functions to get size of internal data */
@@ -92,6 +92,9 @@ public:
     void display_org_content() const;
     void display_right_answers () const;
     void display_weights(int *p_q_s_indexs, int *p_a_s_indexs) const;
+    
+    /* unit test */
+    bool run_test (const char *pFileName);
     
 private:
     /* help function to parse the file */
