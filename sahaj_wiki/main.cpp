@@ -397,7 +397,7 @@ bool comprehension::init (const char *pFileName, sentence *test_right_answers)
     fin.open(pFileName, ios::in);
     if (fin.fail())
     {
-        printf ("ERROR !!! : File open error \n");
+        printf ("ERROR !!! : File open error %s\n", pFileName);
         return false;
     }
     
